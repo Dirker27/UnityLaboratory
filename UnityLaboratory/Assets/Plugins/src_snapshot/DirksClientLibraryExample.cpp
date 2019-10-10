@@ -7,6 +7,8 @@
 #include <string>
 #include <cstdlib>
 #include <sstream>
+#include <chrono>
+#include <iostream>
 
 namespace DirkaLurk { namespace Library {
     class Client::Impl final
@@ -205,4 +207,33 @@ void InvokeMe(void (__stdcall* function)(const char*), const char* message, int 
     auto upperMessage = msg.append(client->GenerateRandomUUID());
 
     client->DoTheThing(function, upperMessage.c_str());
+}
+
+void(__stdcall* delayFunction)(void);
+std::chrono::milliseconds functionDelayMillis;
+std::chrono::steady_clock::time_point delayStartTime;
+
+bool delaySet = false;
+
+void DelayInvoke(void(__stdcall* function)(), int delayMillis)
+{
+    delayFunction = function;
+    functionDelayMillis = std::chrono::milliseconds(delayMillis);
+
+    delayStartTime = std::chrono::steady_clock::now();
+
+    delaySet = true;
+}
+
+void PollInvoke()
+{
+    if (!delaySet) { return; }
+
+    //std::cout << "Polling..." << std::endl;
+
+    if (functionDelayMillis < (std::chrono::steady_clock::now() - delayStartTime))
+    {
+        (*delayFunction)();
+        delaySet = false;
+    }
 }

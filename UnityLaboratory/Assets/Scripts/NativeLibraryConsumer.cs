@@ -10,7 +10,7 @@ using System.Text;
 public class NativeLibraryConsumer : MonoBehaviour
 {
 
-    public delegate void Callback(StringBuilder sb);
+    public delegate void StringCallback(StringBuilder sb);
 
     static void LogCallback(StringBuilder sb) {
         Debug.LogWarning("FROM THE OTHER SIDE: " + sb.ToString());
@@ -44,8 +44,8 @@ public class NativeLibraryConsumer : MonoBehaviour
         [DllImport("DirksClientLibraryExample",
             CharSet=CharSet.Ansi,
             CallingConvention=CallingConvention.StdCall)]
-        private static extern void InvokeMe(Callback callback, string message, int length);
-    #endif
+        private static extern void InvokeMe(StringCallback stringCallback, string message, int length);
+#endif
 
 
     //~ ========================================================= ~//
@@ -87,7 +87,7 @@ public class NativeLibraryConsumer : MonoBehaviour
         // Function pointers as callbacks --------------------------=
         // https://stackoverflow.com/questions/44877500/register-c-sharp-delegate-to-c-callback-what-does-marshal-getfunctionpointerf
         //
-        Callback myCallback = new Callback(LogCallback);
-        InvokeMe(myCallback, "asdfff", 5);
+        StringCallback myStringCallback = new StringCallback(LogCallback);
+        InvokeMe(myStringCallback, "asdfff", 5);
     }
 }

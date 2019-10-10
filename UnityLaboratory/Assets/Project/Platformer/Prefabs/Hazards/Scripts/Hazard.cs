@@ -32,7 +32,7 @@ public class Hazard : MonoBehaviour
     {
         Debug.Log(TAG + "Trigger detected at pos[" + other.transform.position + "].");
 
-        PlayerLifecycle lifecycle = other.gameObject.GetComponent<PlayerLifecycle>();
+        PlayerRespawn lifecycle = other.gameObject.GetComponent<PlayerRespawn>();
         if (lifecycle)
         {
             lifecycle.Respawn();

@@ -1,9 +1,12 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class PlayerLifecycle : MonoBehaviour
+public class PlayerRespawn : MonoBehaviour
 {
-    private const string TAG = "[PlayerLifecycle] ";
+    private const string TAG = "[PlayerRespawn] ";
+
+    // Bad dependency pattern. repalce with event emission.
+    public DeathTextProvider notification;
 
     public Vector3 spawnLocation;
     public Quaternion spawnRotation;
@@ -24,7 +27,10 @@ public class PlayerLifecycle : MonoBehaviour
     {
         Debug.Log(TAG + "Respawning to pos[" + spawnLocation + "] rot<" + spawnRotation + ">.");
 
-    transform.position = spawnLocation;
+        transform.position = spawnLocation;
         transform.rotation = spawnRotation;
+
+        // Replace with event emission.
+        notification.Display();
     }
 }

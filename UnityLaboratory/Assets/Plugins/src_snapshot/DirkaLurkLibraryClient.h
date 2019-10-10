@@ -49,4 +49,6 @@ extern "C" {
     EXPORT void ToUpperString(OUT char* lower, const char* input, const int length);
 
     EXPORT void InvokeMe(void (__stdcall* function)(const char*), const char* message, int length);
+    EXPORT void DelayInvoke(void(__stdcall* function)(), int delayMillis);
+    EXPORT void PollInvoke();
 }
