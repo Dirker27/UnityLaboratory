@@ -8,6 +8,8 @@
 */
 public class LayeredAttributesImpl : ILayeredAttributes {
 
+    private const int DEFAULT_ATTRIBUTE_VALUE = 0;
+
     // Base attributes affected 
     private Dictionary<AttributeKey, int> baseAttributeMap;
 
@@ -17,20 +19,22 @@ public class LayeredAttributesImpl : ILayeredAttributes {
     // Cached values for attributes to avoid re-evaluating a current value until a layer is added/removed or base attribute is updated.
     private Dictionary<AttributeKey, int> cachedAttributeMap;
 
+
     public LayeredAttributesImpl()
     {
         baseAttributeMap = new Dictionary<AttributeKey, int>();
         cachedAttributeMap = new Dictionary<AttributeKey, int>();
         attributeModifiers = new Dictionary<AttributeKey, List<LayeredEffectDefinition>>();
-        ;    }
+    }
+
 
     public void SetBaseAttribute(AttributeKey attribute, int value)
     {
+        // modify base
+        baseAttributeMap[attribute] = value;
+
         // invalidate cache
         cachedAttributeMap.Remove(attribute);
-
-        // modify base
-        baseAttributeMap.Add(attribute, value);
     }
 
     public int GetCurrentAttribute(AttributeKey attribute)
@@ -47,61 +51,72 @@ public class LayeredAttributesImpl : ILayeredAttributes {
     }
 
     public void AddLayeredEffect(LayeredEffectDefinition effect)
-    {
+    { 
+        if (! attributeModifiers.ContainsKey(effect.Attribute))
+        {
+            attributeModifiers[effect.Attribute] = new List<LayeredEffectDefinition>();
+        }
+        attributeModifiers[effect.Attribute].Add(effect);
+
         // invalidate cache
         cachedAttributeMap.Remove(effect.Attribute);
-
-        switch(effect.Operation)
-        {
-            case EffectOperation.Invalid:
-                // TODO
-                break;
-
-            case EffectOperation.Set:
-                // TODO
-                break;
-
-            case EffectOperation.Add:
-                // TODO
-                break;
-
-            case EffectOperation.Subtract:
-                // TODO
-                break;
-
-            case EffectOperation.Multiply:
-                // TODO
-                break;
-
-            case EffectOperation.BitwiseOr:
-                // TODO
-                break;
-
-            case EffectOperation.BitwiseAnd:
-                // TODO
-                break;
-
-            case EffectOperation.BitwiseXor:
-                // TODO
-                break;
-        }
     }
 
     public void ClearLayeredEffects()
     {
         attributeModifiers.Clear();
+
+        cachedAttributeMap.Clear();
     }
+
 
     private int EvaluateLayeredAttributeValue(AttributeKey attribute)
     {
-        int value = 0;
+        int value = DEFAULT_ATTRIBUTE_VALUE;
         if (baseAttributeMap.ContainsKey(attribute))
         {
             value = baseAttributeMap[attribute];
         }
 
-        // Foreach Modifier...
+        if (attributeModifiers.ContainsKey(attribute)) {
+            foreach (LayeredEffectDefinition effect in attributeModifiers[attribute])
+            {
+                value = ApplyAttributeModifier(value, effect);
+            }
+        }
 
         return value;
+    }
+
+    private int ApplyAttributeModifier(int originalValue, LayeredEffectDefinition modifier)
+    {
+        switch (modifier.Operation)
+        {
+            case EffectOperation.Invalid:
+                return originalValue;
+
+            case EffectOperation.Set:
+                return modifier.Modification;
+
+            case EffectOperation.Add:
+                return originalValue + modifier.Modification;
+
+            case EffectOperation.Subtract:
+                return originalValue - modifier.Modification;
+
+            case EffectOperation.Multiply:
+                return originalValue * modifier.Modification;
+
+            case EffectOperation.BitwiseOr:
+                return originalValue | modifier.Modification;
+
+            case EffectOperation.BitwiseAnd:
+                return originalValue & modifier.Modification;
+
+            case EffectOperation.BitwiseXor:
+                return originalValue ^ modifier.Modification;
+        }
+
+        return originalValue;
     }
 }
