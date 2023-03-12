@@ -1,7 +1,9 @@
-﻿using UnityEngine;
-using System.Collections;
-
-public class LayeredAttributeImplTest : MonoBehaviour
+﻿/**
+ * Unit / Functional Tests for <see cref="LayeredAttributesImpl"/>
+ * 
+ * Please pardon the lack of C# test framework integration - I ran these tests in Unity using a shim actor.
+ */
+public class LayeredAttributeImplTest
 {
     private bool testSuiteSuccess;
 
@@ -192,7 +194,7 @@ public class LayeredAttributeImplTest : MonoBehaviour
 
         //     00101000-10101111-10100001-01101011 [682598763]
         // XOR 01010111-01010000-01011110-10010100 [1464884884]
-        //  -> 11111111-11111111-11111111-11111111 [-1]
+        //  -> 01111111-11111111-11111111-11111111 [2147483647]
         instance.SetBaseAttribute(AttributeKey.Toughness, 682598763);
         instance.AddLayeredEffect(new LayeredEffectDefinition
         {
@@ -201,17 +203,17 @@ public class LayeredAttributeImplTest : MonoBehaviour
             Modification = 1464884884,
             Layer = 0
         });
-        AssertExpectedValueForKey(instance, AttributeKey.Toughness, -1);
+        AssertExpectedValueForKey(instance, AttributeKey.Toughness, 2147483647);
 
         //     00101000-10101111-10100001-01101011 [682598763]
-        // XOR 11111111-11111111-11111111-11111111 [-1]
+        // XOR 01111111-11111111-11111111-11111111 [2147483647]
         //  -> 01010111-01010000-01011110-10010100 [1464884884]
         instance.SetBaseAttribute(AttributeKey.Color, 682598763);
         instance.AddLayeredEffect(new LayeredEffectDefinition
         {
             Attribute = AttributeKey.Color,
             Operation = EffectOperation.BitwiseXor,
-            Modification = -1,
+            Modification = 2147483647,
             Layer = 0
         });
         AssertExpectedValueForKey(instance, AttributeKey.Color, 1464884884);
@@ -229,15 +231,12 @@ public class LayeredAttributeImplTest : MonoBehaviour
             Modification = 5,
             Layer = 1
         });
-
-        // 0110 ^ 0111 == 24
         AssertExpectedValueForKey(instance, AttributeKey.Color, 3);
     }
 
     public void Test_AddLayeredEffect_SetValue()
     {
         LayeredAttributesImpl instance = new LayeredAttributesImpl();
-
         instance.SetBaseAttribute(AttributeKey.ManaValue, 10);
         instance.AddLayeredEffect(new LayeredEffectDefinition
         {
@@ -246,8 +245,6 @@ public class LayeredAttributeImplTest : MonoBehaviour
             Modification = 5,
             Layer = 0
         });
-
-        // 0110 ^ 0111 == 24
         AssertExpectedValueForKey(instance, AttributeKey.ManaValue, 5);
     }
 
@@ -276,10 +273,149 @@ public class LayeredAttributeImplTest : MonoBehaviour
         AssertExpectedValueForKey(instance, AttributeKey.ManaValue, 5);
     }
 
-    // TODO: Layer Order
-    // TODO: Stacking Layers
-    // TODO: Same Layer applied in insertion order
-    // TODO: Clearing Layered Effects
+    public void Test_LayeredEffects_AppliedInLayerOrder()
+    {
+        LayeredAttributesImpl instance = new LayeredAttributesImpl();
+
+        instance.SetBaseAttribute(AttributeKey.ManaValue, 1);
+        instance.AddLayeredEffect(new LayeredEffectDefinition
+        {
+            Attribute = AttributeKey.ManaValue,
+            Operation = EffectOperation.Multiply,
+            Modification = 5,
+            Layer = 1
+        });
+        // 5 * 1 == 5
+        AssertExpectedValueForKey(instance, AttributeKey.ManaValue, 5);
+
+
+        instance.AddLayeredEffect(new LayeredEffectDefinition
+        {
+            Attribute = AttributeKey.ManaValue,
+            Operation = EffectOperation.Subtract,
+            Modification = 1,
+            Layer = 2
+        });
+        // (5 * 1) - 1 == 4
+        AssertExpectedValueForKey(instance, AttributeKey.ManaValue, 4);
+
+        instance.AddLayeredEffect(new LayeredEffectDefinition
+        {
+            Attribute = AttributeKey.ManaValue,
+            Operation = EffectOperation.Multiply,
+            Modification = 4,
+            Layer = 3
+        });
+        // ((5 * 1) - 1) * 4 == 16
+        AssertExpectedValueForKey(instance, AttributeKey.ManaValue, 16);
+
+        instance.AddLayeredEffect(new LayeredEffectDefinition
+        {
+            Attribute = AttributeKey.ManaValue,
+            Operation = EffectOperation.Subtract,
+            Modification = 1,
+            Layer = -1
+        });
+        // ((5 * (1 - 1)) - 1) * 4 == -4
+        AssertExpectedValueForKey(instance, AttributeKey.ManaValue, -4);
+    }
+
+    public void Test_LayeredEffects_AppliedInInsertionOrderForSameLayer()
+    {
+        LayeredAttributesImpl instance = new LayeredAttributesImpl();
+
+        instance.SetBaseAttribute(AttributeKey.ManaValue, 1);
+        instance.AddLayeredEffect(new LayeredEffectDefinition
+        {
+            Attribute = AttributeKey.ManaValue,
+            Operation = EffectOperation.Multiply,
+            Modification = 5,
+            Layer = 1
+        });
+        // 5 * 1 == 5
+        AssertExpectedValueForKey(instance, AttributeKey.ManaValue, 5);
+
+
+        instance.AddLayeredEffect(new LayeredEffectDefinition
+        {
+            Attribute = AttributeKey.ManaValue,
+            Operation = EffectOperation.Subtract,
+            Modification = 1,
+            Layer = 1
+        });
+        // (5 * 1) - 1 == 4
+        AssertExpectedValueForKey(instance, AttributeKey.ManaValue, 4);
+
+        instance.AddLayeredEffect(new LayeredEffectDefinition
+        {
+            Attribute = AttributeKey.ManaValue,
+            Operation = EffectOperation.Multiply,
+            Modification = 4,
+            Layer = 1
+        });
+        // ((5 * 1) - 1) * 4 == 16
+        AssertExpectedValueForKey(instance, AttributeKey.ManaValue, 16);
+    }
+
+    public void Test_ClearEffects_ClearsAllModifiers()
+    {
+        LayeredAttributesImpl instance = new LayeredAttributesImpl();
+
+        instance.SetBaseAttribute(AttributeKey.ManaValue, 1);
+        instance.SetBaseAttribute(AttributeKey.Power, 10);
+        instance.AddLayeredEffect(new LayeredEffectDefinition
+        {
+            Attribute = AttributeKey.ManaValue,
+            Operation = EffectOperation.Multiply,
+            Modification = 5,
+            Layer = 1
+        });
+        instance.AddLayeredEffect(new LayeredEffectDefinition
+        {
+            Attribute = AttributeKey.Power,
+            Operation = EffectOperation.Subtract,
+            Modification = 2,
+            Layer = 2
+        });
+        instance.AddLayeredEffect(new LayeredEffectDefinition
+        {
+            Attribute = AttributeKey.Power,
+            Operation = EffectOperation.Multiply,
+            Modification = 4,
+            Layer = 3
+        });
+        AssertExpectedValueForKey(instance, AttributeKey.ManaValue, 5); // 5 * 1 == 5
+        AssertExpectedValueForKey(instance, AttributeKey.Power, 32);    // (10 - 2) * 4 == 32
+
+        instance.ClearLayeredEffects();
+        AssertExpectedValueForKey(instance, AttributeKey.ManaValue, 1);
+        AssertExpectedValueForKey(instance, AttributeKey.Power, 10);
+    }
+
+    public void Test_ClearEffects_AllowsModifiersAfterClear()
+    {
+        LayeredAttributesImpl instance = new LayeredAttributesImpl();
+
+        instance.SetBaseAttribute(AttributeKey.Power, 10);
+        instance.AddLayeredEffect(new LayeredEffectDefinition
+        {
+            Attribute = AttributeKey.Power,
+            Operation = EffectOperation.Subtract,
+            Modification = 1,
+            Layer = 2
+        });
+        instance.ClearLayeredEffects();
+        AssertExpectedValueForKey(instance, AttributeKey.Power, 10);
+
+        instance.AddLayeredEffect(new LayeredEffectDefinition
+        {
+            Attribute = AttributeKey.Power,
+            Operation = EffectOperation.Multiply,
+            Modification = 4,
+            Layer = 3
+        });
+        AssertExpectedValueForKey(instance, AttributeKey.Power, 40);
+    }
 
     private void AssertExpectedValueForKey(LayeredAttributesImpl instance, AttributeKey key, int expectedValue)
     {

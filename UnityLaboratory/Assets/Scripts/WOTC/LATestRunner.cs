@@ -46,6 +46,18 @@ public class LATestRunner : MonoBehaviour {
         Debug.Log("Test: AddLayeredEffect-SetValue-PreviousLayer");
         testHarness.Test_AddLayeredEffect_SetValue_OverridesPreviousLayer();
 
+        Debug.Log("Test: LayeredEffects-LayerOrder");
+        testHarness.Test_LayeredEffects_AppliedInLayerOrder();
+
+        Debug.Log("Test: LayeredEffects-InsertionOrder");
+        testHarness.Test_LayeredEffects_AppliedInInsertionOrderForSameLayer();
+
+        Debug.Log("Test: ClearEffects-ClearsAllModifiers");
+        testHarness.Test_ClearEffects_ClearsAllModifiers();
+
+        Debug.Log("Test: ClearEffects-ClearsAllModifiers");
+        testHarness.Test_ClearEffects_AllowsModifiersAfterClear();
+
 
         if (testHarness.GetTestSuiteSuccess())
 		{
